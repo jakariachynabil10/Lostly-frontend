@@ -88,4 +88,10 @@ export interface DashboardStats {
     totalMatches: number;
     totalResolved: number;
   };
+  weeklyTrends?: {
+    days: string[];
+    reports: number[];
+    matches: number[];
+    percentIncrease: number;
+  };
 }

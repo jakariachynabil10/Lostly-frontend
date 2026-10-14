@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "../components/providers/AppProviders";
 import { Navbar } from "../components/layout/Navbar";
 import { Footer } from "../components/layout/Footer";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Lostly — AI-Powered Lost & Found Matching Platform",
@@ -30,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen flex flex-col bg-slate-50 text-slate-900`}
+        className={`${inter.className} font-sans antialiased min-h-screen flex flex-col bg-slate-50 text-slate-900`}
       >
         <AppProviders>
           <Navbar />
@@ -41,3 +32,4 @@ export default function RootLayout({
     </html>
   );
 }
+

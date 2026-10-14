@@ -33,6 +33,10 @@ const config: Config = {
           dark: "#047857",
         },
       },
+      boxShadow: {
+        "2xs": "0 1px 2px 0 rgba(0, 0, 0, 0.02)",
+        xs: "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
+      },
       animation: {
         "fade-in": "fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
         "slide-up": "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)",

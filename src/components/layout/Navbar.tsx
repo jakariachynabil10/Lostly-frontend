@@ -23,6 +23,10 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
   const handleLogout = async () => {
     await logout();
     setUserMenuOpen(false);
