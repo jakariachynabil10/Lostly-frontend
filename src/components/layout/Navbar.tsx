@@ -14,7 +14,9 @@ import {
   Menu,
   X,
   Sparkles,
-} from "lucide-react";
+} from "lucide-react";,
+
+// work on navbar
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
