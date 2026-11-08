@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -18,7 +18,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-export default function FoundItemsPage() {
+function FoundItemsContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
 
@@ -247,5 +247,13 @@ export default function FoundItemsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function FoundItemsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen py-12 text-center text-slate-500">Loading found items...</div>}>
+      <FoundItemsContent />
+    </Suspense>
   );
 }
