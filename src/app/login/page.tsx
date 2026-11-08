@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { Compass, Mail, Lock, ArrowRight, AlertCircle, Sparkles } from "lucide-react";
 
@@ -22,9 +23,20 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const responseData = axios.isAxiosError<{
+        message?: string;
+        code?: string;
+      }>(err)
+        ? err.response?.data
+        : undefined;
+      const code = responseData?.code;
+      if (code === "EMAIL_NOT_VERIFIED") {
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
       setError(
-        err.response?.data?.message || "Failed to log in. Please check your credentials."
+        responseData?.message || "Failed to log in. Please check your credentials."
       );
     } finally {
       setIsSubmitting(false);
@@ -69,7 +81,7 @@ export default function LoginPage() {
 
         {/* Error message */}
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs">
+          <div aria-live="polite" className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -125,7 +137,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="text-center text-xs text-slate-500">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link
             href="/register"
             className="font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { Compass, User, Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
 
@@ -34,10 +35,13 @@ export default function RegisterPage() {
 
     try {
       await register(name, email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
+      router.push(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+    } catch (err: unknown) {
+      const responseData = axios.isAxiosError<{ message?: string }>(err)
+        ? err.response?.data
+        : undefined;
       setError(
-        err.response?.data?.message || "Failed to create account. Please try again."
+        responseData?.message || "Failed to create account. Please try again."
       );
     } finally {
       setIsSubmitting(false);
@@ -62,7 +66,7 @@ export default function RegisterPage() {
 
         {/* Error message */}
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs">
+          <div aria-live="polite" className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2 text-xs">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
