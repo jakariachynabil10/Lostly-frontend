@@ -3,12 +3,21 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { User } from "../types";
 import { api } from "../lib/api";
+import {
+  loginUser,
+  registerUser,
+  RegisterResponse,
+  verifyEmail as verifyEmailApi,
+  resendVerification,
+} from "../lib/auth-api";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<RegisterResponse>;
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { name?: string; profileImage?: string | null }) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -56,9 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchCurrentUser]);
 
   const login = async (email: string, password: string) => {
-    const res = await api.post("/auth/login", { email, password });
-    if (res.data?.success) {
-      const { user: userData, accessToken, refreshToken } = res.data.data;
+    const res = await loginUser(email, password);
+    if (res.success) {
+      const { user: userData, accessToken, refreshToken } = res.data;
       localStorage.setItem("lostly_access_token", accessToken);
       localStorage.setItem("lostly_refresh_token", refreshToken);
       setUser(userData);
@@ -66,13 +75,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const res = await api.post("/auth/register", { name, email, password });
-    if (res.data?.success) {
-      const { user: userData, accessToken, refreshToken } = res.data.data;
+    const res = await registerUser(name, email, password);
+    return res.data;
+  };
+
+  const verifyEmail = async (email: string, code: string) => {
+    const res = await verifyEmailApi(email, code);
+    if (res.success) {
+      const { user: userData, accessToken, refreshToken } = res.data;
       localStorage.setItem("lostly_access_token", accessToken);
       localStorage.setItem("lostly_refresh_token", refreshToken);
       setUser(userData);
     }
+  };
+
+  const resendVerificationCode = async (email: string) => {
+    await resendVerification(email);
   };
 
   const logout = async () => {
@@ -104,6 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         login,
         register,
+        verifyEmail,
+        resendVerification: resendVerificationCode,
         logout,
         updateProfile,
         refreshProfile: fetchCurrentUser,

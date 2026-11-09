@@ -81,6 +81,8 @@ export interface DashboardStats {
     totalFound: number;
     activeMatches: number;
     resolvedItems: number;
+    pendingClaims: number;
+    successfulRecoveries: number;
   };
   systemStats: {
     totalLost: number;
@@ -94,4 +96,25 @@ export interface DashboardStats {
     matches: number[];
     percentIncrease: number;
   };
+  recentNotifications?: NotificationItem[];
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface PaginatedNotifications {
+  notifications: NotificationItem[];
+  total: number;
+  unreadCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }

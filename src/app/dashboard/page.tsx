@@ -6,7 +6,19 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../lib/api";
-import { DashboardStats, ItemReport, MatchItem } from "../../types";
+import {
+  DashboardStats,
+  ItemReport,
+  MatchFactor,
+  MatchItem,
+  NotificationItem,
+} from "../../types";
+import {
+  getSafeNotificationPath,
+  getUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "../../lib/notifications-api";
 import {
   LayoutGrid,
   List,
@@ -49,7 +61,7 @@ interface DisplayMatch {
   score: number;
   imageUrl: string;
   reportId?: string;
-  factors?: any[];
+  factors?: MatchFactor[];
 }
 
 function formatTimeAgo(dateString?: string): string {
@@ -122,7 +134,6 @@ export default function DashboardPage() {
 
   // Modal States
   const [selectedMatchModal, setSelectedMatchModal] = useState<DisplayMatch | null>(null);
-  const [identityModalOpen, setIdentityModalOpen] = useState(false);
   const [trustModalOpen, setTrustModalOpen] = useState(false);
   const [assistanceModalOpen, setAssistanceModalOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<ItemReport | null>(null);
@@ -134,7 +145,11 @@ export default function DashboardPage() {
   };
 
   // 1. Fetch Dynamic Dashboard Stats
-  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
       const res = await api.get("/dashboard/stats");
@@ -143,8 +158,51 @@ export default function DashboardPage() {
     enabled: !!user,
   });
 
+  const unreadNotificationsQuery = useQuery({
+    queryKey: ["notification-unread-count"],
+    queryFn: getUnreadNotificationCount,
+    enabled: Boolean(user),
+    refetchInterval: () =>
+      typeof document !== "undefined" && document.visibilityState === "visible"
+        ? 45_000
+        : false,
+  });
+
+  const refreshNotificationData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["notification-unread-count"] }),
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] }),
+    ]);
+  };
+
+  const markNotificationReadMutation = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: refreshNotificationData,
+    onError: () => showToast("Could not update the notification."),
+  });
+  const markAllNotificationsReadMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: refreshNotificationData,
+    onError: () => showToast("Could not update notifications."),
+  });
+
+  const openDashboardNotification = async (notification: NotificationItem) => {
+    try {
+      if (!notification.read) {
+        await markNotificationReadMutation.mutateAsync(notification.id);
+      }
+      setNotificationOpen(false);
+      router.push(
+        getSafeNotificationPath(notification.link) || "/notifications",
+      );
+    } catch {
+      showToast("Could not open this notification. Please try again.");
+    }
+  };
+
   // 2. Fetch User's Own Reports
-  const { data: myReports, isLoading: reportsLoading } = useQuery<ItemReport[]>({
+  const { data: myReports } = useQuery<ItemReport[]>({
     queryKey: ["my-reports"],
     queryFn: async () => {
       const res = await api.get("/reports/my");
@@ -504,8 +562,12 @@ export default function DashboardPage() {
                 id="bell-notifications-btn"
               >
                 <Bell className="w-4 h-4 text-slate-600" />
-                {filteredMatches.length > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+                {(unreadNotificationsQuery.data?.count || 0) > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-center text-[9px] font-bold leading-4 text-white ring-2 ring-white">
+                    {(unreadNotificationsQuery.data?.count || 0) > 99
+                      ? "99+"
+                      : unreadNotificationsQuery.data?.count}
+                  </span>
                 )}
               </button>
 
@@ -517,32 +579,57 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
                     <span className="text-xs font-bold text-slate-900">Notifications</span>
-                    <span className="text-[10px] bg-rose-50 text-rose-600 font-semibold px-2 py-0.5 rounded-full">
-                      {filteredMatches.length} Matches Found
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => markAllNotificationsReadMutation.mutate()}
+                      disabled={
+                        !(unreadNotificationsQuery.data?.count || 0) ||
+                        markAllNotificationsReadMutation.isPending
+                      }
+                      className="text-[10px] font-semibold text-indigo-600 disabled:text-slate-400"
+                    >
+                      Mark all as read
+                    </button>
                   </div>
                   <div className="space-y-1.5 max-h-60 overflow-y-auto">
-                    {filteredMatches.slice(0, 4).map((match) => (
-                      <div
-                        key={match.id}
-                        onClick={() => {
-                          setSelectedMatchModal(match);
-                          setNotificationOpen(false);
-                        }}
-                        className="p-2.5 rounded-xl bg-indigo-50/50 hover:bg-indigo-50 text-xs cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="font-semibold text-slate-900">{match.itemName}</p>
-                          <span className="text-emerald-600 font-bold text-[10px]">
-                            {match.score}%
+                    {statsLoading ? (
+                      <p className="p-3 text-center text-[11px] text-slate-500">
+                        Loading notifications...
+                      </p>
+                    ) : stats?.recentNotifications?.length ? (
+                      stats.recentNotifications.slice(0, 5).map((notification) => (
+                        <button
+                          type="button"
+                          key={notification.id}
+                          onClick={() => openDashboardNotification(notification)}
+                          className={`w-full rounded-xl p-2.5 text-left text-xs transition hover:bg-indigo-50 ${
+                            notification.read ? "bg-white" : "bg-indigo-50/50"
+                          }`}
+                        >
+                          <span className="block font-semibold text-slate-900">
+                            {notification.title}
                           </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                          Found near {match.location} ({match.timeAgo})
-                        </p>
-                      </div>
-                    ))}
+                          <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+                            {notification.message}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="p-3 text-center text-[11px] text-slate-500">
+                        No notifications yet.
+                      </p>
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotificationOpen(false);
+                      router.push("/notifications");
+                    }}
+                    className="w-full border-t border-slate-100 pt-2 text-center text-[11px] font-semibold text-indigo-600"
+                  >
+                    View all notifications
+                  </button>
                 </div>
               )}
             </div>
@@ -690,9 +777,9 @@ export default function DashboardPage() {
           </div>
 
           {/* ======================================================= */}
-          {/* ROW 2: 4 STAT METRIC CARDS                              */}
+          {/* ROW 2: 6 STAT METRIC CARDS                              */}
           {/* ======================================================= */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 xl:grid-cols-6">
             {/* Card 1: Active Reports */}
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
@@ -753,6 +840,38 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-500 font-medium">Trust Score</p>
                 <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
                   98%
+                </p>
+              </div>
+            </div>
+
+            {/* Card 5: Pending Claims */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <Clock className="w-5 h-5 text-amber-500" />
+                <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  In progress
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Pending Claims</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+                  {statsLoading ? "..." : stats?.userStats.pendingClaims ?? "-"}
+                </p>
+              </div>
+            </div>
+
+            {/* Card 6: Successful Recoveries */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  Completed
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Successful Recoveries</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+                  {statsLoading ? "..." : stats?.userStats.successfulRecoveries ?? "-"}
                 </p>
               </div>
             </div>
@@ -1137,6 +1256,67 @@ export default function DashboardPage() {
             {/* RIGHT COLUMN (COL 9 TO 12)                            */}
             {/* ----------------------------------------------------- */}
             <div className="lg:col-span-4 space-y-7">
+              {/* Section: Recent Notifications */}
+              <section className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold text-slate-900">
+                    Recent Notifications
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/notifications")}
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                  >
+                    View all
+                  </button>
+                </div>
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-2xs">
+                  {statsLoading ? (
+                    <p className="p-3 text-center text-xs text-slate-500">
+                      Loading notifications...
+                    </p>
+                  ) : statsError ? (
+                    <p role="alert" className="p-3 text-center text-xs text-rose-600">
+                      Recent notifications could not be loaded.
+                    </p>
+                  ) : stats?.recentNotifications?.length ? (
+                    <div className="space-y-1">
+                      {stats.recentNotifications.slice(0, 5).map((notification) => (
+                        <button
+                          type="button"
+                          key={notification.id}
+                          onClick={() => openDashboardNotification(notification)}
+                          className={`w-full rounded-xl p-3 text-left transition hover:bg-slate-50 ${
+                            notification.read ? "" : "bg-indigo-50/70"
+                          }`}
+                        >
+                          <span className="flex items-start gap-2">
+                            {!notification.read && (
+                              <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-600" />
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-xs font-semibold text-slate-900">
+                                {notification.title}
+                              </span>
+                              <span className="mt-1 block text-[11px] leading-4 text-slate-600">
+                                {notification.message}
+                              </span>
+                              <span className="mt-1 block text-[10px] text-slate-400">
+                                {new Date(notification.createdAt).toLocaleString()}
+                              </span>
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="p-3 text-center text-xs text-slate-500">
+                      You&apos;re all caught up.
+                    </p>
+                  )}
+                </div>
+              </section>
+
               {/* Section: AI Intelligence */}
               <div className="space-y-3.5">
                 <h2 className="text-base font-bold text-slate-900">

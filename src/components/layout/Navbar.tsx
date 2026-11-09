@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import { NotificationBell } from "./NotificationBell";
 import {
   Compass,
-  Search,
   PlusCircle,
   User as UserIcon,
   LogOut,
@@ -14,7 +14,7 @@ import {
   Menu,
   X,
   Sparkles,
-} from "lucide-react";,
+} from "lucide-react";
 
 // work on navbar
 
@@ -83,6 +83,7 @@ export const Navbar: React.FC = () => {
 
           {/* Action Buttons & Auth */}
           <div className="hidden md:flex items-center gap-3">
+            <NotificationBell />
             {/* Create Report Buttons */}
             <div className="flex items-center gap-2">
               <Link
@@ -186,6 +187,7 @@ export const Navbar: React.FC = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-2">
+            <NotificationBell />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
