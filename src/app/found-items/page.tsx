@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "../../lib/api";
-import { ItemReport, Category, PaginatedReports } from "../../types";
+import { Category, PaginatedReports } from "../../types";
 import { ItemCard } from "../../components/items/ItemCard";
 import {
   Search,

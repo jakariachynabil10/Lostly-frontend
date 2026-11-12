@@ -5,14 +5,13 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "../../lib/api";
-import { ItemReport, Category, PaginatedReports } from "../../types";
+import { Category, PaginatedReports } from "../../types";
 import { ItemCard } from "../../components/items/ItemCard";
 import {
   Search,
   Filter,
   PlusCircle,
   MapPin,
-  Calendar,
   Layers,
   ChevronLeft,
   ChevronRight,
@@ -209,7 +208,7 @@ function LostItemsContent() {
           </div>
           <h3 className="text-lg font-bold text-slate-900">No lost items found</h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            We couldn't find any items matching your active search filters. Try widening your criteria or submit a new report.
+            We couldn&apos;t find any items matching your active search filters. Try widening your criteria or submit a new report.
           </p>
           <div className="flex justify-center gap-3 pt-2">
             <button
