@@ -11,14 +11,7 @@ import {
   Search,
   Sparkles,
   ArrowRight,
-  ShieldCheck,
-  Compass,
-  Cpu,
-  Layers,
-  MapPin,
   PlusCircle,
-  HelpCircle,
-  CheckCircle,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -326,7 +319,7 @@ export default function HomePage() {
               Lost something important today?
             </h3>
             <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
-              Don't panic. Submit a report in under two minutes. Our matching system automatically checks existing and newly incoming found items 24/7.
+              Don&apos;t panic. Submit a report in under two minutes. Our matching system automatically checks existing and newly incoming found items 24/7.
             </p>
           </div>
 
