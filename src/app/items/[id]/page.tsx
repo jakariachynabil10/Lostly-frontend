@@ -23,7 +23,6 @@ import {
   RotateCcw,
   ShieldCheck,
   AlertCircle,
-  HelpCircle,
   Lock,
   ExternalLink,
 } from "lucide-react";
@@ -424,7 +423,7 @@ export default function ItemDetailPage() {
                       Match Inspection Details
                     </span>
                     <h3 className="text-lg font-bold text-slate-900">
-                      Pairing: "{report.itemName}" ↔ "{selectedMatch.counterpart.itemName}"
+                      Pairing: &quot;{report.itemName}&quot; ↔ &quot;{selectedMatch.counterpart.itemName}&quot;
                     </h3>
                   </div>
 
@@ -485,7 +484,7 @@ export default function ItemDetailPage() {
                 Claim Verification System
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                You've identified a strong match ({selectedMatch ? Math.round(selectedMatch.similarityScore) : 0}% similarity)!
+                You&apos;ve identified a strong match ({selectedMatch ? Math.round(selectedMatch.similarityScore) : 0}% similarity)!
               </p>
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-left text-xs text-amber-900 space-y-1">
                 <p className="font-semibold">Notice for Phase 1:</p>
@@ -518,7 +517,7 @@ export default function ItemDetailPage() {
                 Delete This Report?
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Are you sure you want to delete "{report.itemName}"? This action cannot be undone.
+                Are you sure you want to delete &quot;{report.itemName}&quot;? This action cannot be undone.
               </p>
             </div>
 
