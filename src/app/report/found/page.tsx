@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
@@ -9,10 +10,6 @@ import { Category } from "../../../types";
 import {
   Sparkles,
   Upload,
-  Calendar,
-  Clock,
-  MapPin,
-  Tag,
   AlertCircle,
   CheckCircle2,
   ArrowRight,
@@ -112,9 +109,12 @@ export default function ReportFoundPage() {
         router.refresh();
         setSuccessInfo({ id: createdReport.id, matches: matchesCount });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<{ message?: string }>(err)
+        ? err.response?.data?.message
+        : undefined;
       setError(
-        err.response?.data?.message || "Failed to submit found item report. Please check fields."
+        message || "Failed to submit found item report. Please check fields."
       );
     } finally {
       setIsSubmitting(false);
