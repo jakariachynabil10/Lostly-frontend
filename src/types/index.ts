@@ -122,3 +122,109 @@ export interface PaginatedNotifications {
   limit: number;
   totalPages: number;
 }
+
+export type ClaimStatus =
+  | "PENDING"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "COMPLETED";
+
+export type ClaimRole = "claimant" | "finder";
+
+export type ClaimAction = "approve" | "reject" | "cancel" | "complete";
+
+export type VerificationReviewStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+
+export interface ClaimSummary {
+  id: string;
+  status: ClaimStatus;
+}
+
+export interface ClaimListItem {
+  id: string;
+  matchId: string;
+  claimantId: string;
+  finderId: string;
+  status: ClaimStatus;
+  createdAt: string;
+  updatedAt: string;
+  claimant: Pick<User, "id" | "name" | "profileImage">;
+  finder: Pick<User, "id" | "name" | "profileImage">;
+  match: {
+    lostReport: Pick<
+      ItemReport,
+      "id" | "itemName" | "imageUrl" | "location" | "date" | "status"
+    >;
+    foundReport: Pick<
+      ItemReport,
+      "id" | "itemName" | "imageUrl" | "location" | "date" | "status"
+    >;
+  };
+  _count: { questions: number };
+}
+
+export interface PaginatedClaims {
+  claims: ClaimListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface MyMatchItem extends MatchItem {
+  myItem: Pick<
+    ItemReport,
+    "id" | "itemName" | "type" | "imageUrl" | "status" | "location" | "date"
+  >;
+  matchedItem: Pick<
+    ItemReport,
+    "id" | "itemName" | "type" | "imageUrl" | "status" | "location" | "date"
+  > & { user?: Pick<User, "id" | "name"> };
+  claim?: ClaimSummary | null;
+  claimsReceivedCount?: number;
+}
+
+export interface ClaimableMatch extends MatchItem {
+  counterpart: ItemReport;
+  claim?: ClaimSummary | null;
+  claimsReceivedCount?: number;
+}
+
+export interface ClaimRoom {
+  id: string;
+  matchId: string;
+  claimantId: string;
+  finderId: string;
+  status: ClaimStatus;
+  reviewNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userRole: ClaimRole;
+  claimant: Pick<User, "id" | "name" | "profileImage"> & { email?: string };
+  finder: Pick<User, "id" | "name" | "profileImage"> & { email?: string };
+  match: {
+    lostReport: ItemReport;
+    foundReport: ItemReport;
+  };
+  questions: VerificationQuestion[];
+}
+
+export interface VerificationQuestion {
+  id: string;
+  claimId: string;
+  question: string;
+  createdAt: string;
+  answers: VerificationAnswer[];
+}
+
+export interface VerificationAnswer {
+  id: string;
+  questionId: string;
+  claimantId: string;
+  answer: string;
+  reviewStatus: VerificationReviewStatus;
+  createdAt: string;
+  updatedAt: string;
+}
