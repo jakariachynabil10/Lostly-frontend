@@ -180,10 +180,11 @@ export function useMyMatches() {
   });
 }
 
-export function useMyClaims(options: MyClaimsOptions) {
+export function useMyClaims(options: MyClaimsOptions, enabled = true) {
   return useQuery({
     queryKey: ["my-claims", options],
     queryFn: () => getMyClaims(options),
+    enabled,
   });
 }
 
