@@ -189,11 +189,11 @@ export function useMyClaims(options: MyClaimsOptions, enabled = true) {
   });
 }
 
-export function useClaim(claimId: string) {
+export function useClaim(claimId: string, enabled = true) {
   return useQuery({
     queryKey: ["claims", claimId],
     queryFn: () => getClaim(claimId),
-    enabled: Boolean(claimId),
+    enabled: Boolean(claimId) && enabled,
   });
 }
 
