@@ -8,6 +8,7 @@ import { AlertCircle, ArrowLeft, PackageSearch } from "lucide-react";
 import { ClaimStatusBadge } from "../../../components/claims/ClaimStatusBadge";
 import { ClaimStatusTimeline } from "../../../components/claims/ClaimStatusTimeline";
 import { ClaimantClaimControls } from "../../../components/claims/ClaimantClaimControls";
+import { FinderClaimControls } from "../../../components/claims/FinderClaimControls";
 import { useAuth } from "../../../context/AuthContext";
 import { useClaim } from "../../../lib/claims-api";
 
@@ -130,6 +131,13 @@ export default function ClaimRoomPage() {
 
       {claim.userRole === "claimant" && (
         <ClaimantClaimControls
+          claimId={claim.id}
+          status={claim.status}
+          questions={claim.questions}
+        />
+      )}
+      {claim.userRole === "finder" && (
+        <FinderClaimControls
           claimId={claim.id}
           status={claim.status}
           questions={claim.questions}
