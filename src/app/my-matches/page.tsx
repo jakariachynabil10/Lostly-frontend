@@ -17,7 +17,7 @@ export default function MyMatchesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const matchesQuery = useMyMatches();
+  const matchesQuery = useMyMatches(Boolean(user) && !authLoading);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login?redirect=/my-matches");

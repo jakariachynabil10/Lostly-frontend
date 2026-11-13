@@ -173,10 +173,11 @@ function useClaimMutation<TVariables, TData>(
   });
 }
 
-export function useMyMatches() {
+export function useMyMatches(enabled = true) {
   return useQuery({
     queryKey: ["my-matches"],
     queryFn: getMyMatches,
+    enabled,
   });
 }
 
