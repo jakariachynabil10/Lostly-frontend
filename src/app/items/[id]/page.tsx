@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { api } from "../../../lib/api";
-import { ItemReport, MatchItem } from "../../../types";
+import { ClaimableMatch, ItemReport } from "../../../types";
 import { useAuth } from "../../../context/AuthContext";
 import { Badge } from "../../../components/ui/Badge";
 import { SimilarityMeter } from "../../../components/items/SimilarityMeter";
 import { MatchFactorsList } from "../../../components/items/MatchFactorsList";
+import { RequestClaimButton } from "../../../components/claims/RequestClaimButton";
 import {
   MapPin,
   Calendar,
@@ -34,13 +34,13 @@ export default function ItemDetailPage() {
   const { user } = useAuth();
   const itemId = params.id as string;
 
-  const [selectedMatch, setSelectedMatch] = useState<MatchItem | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<ClaimableMatch | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Fetch report details & matches
   const { data, isLoading, error } = useQuery<{
     report: ItemReport;
-    matches: MatchItem[];
+    matches: ClaimableMatch[];
   }>({
     queryKey: ["item-detail", itemId],
     queryFn: async () => {
@@ -57,22 +57,6 @@ export default function ItemDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["item-detail", itemId] });
-    },
-  });
-
-  const claimMutation = useMutation({
-    mutationFn: async (matchId: string) => {
-      const response = await api.post<{ data: NonNullable<MatchItem["claim"]> }>(
-        "/claims",
-        { matchId },
-      );
-      return response.data.data;
-    },
-    onSuccess: (claim, matchId) => {
-      setSelectedMatch((current) =>
-        current?.id === matchId ? { ...current, claim } : current,
-      );
-      void queryClient.invalidateQueries({ queryKey: ["item-detail", itemId] });
     },
   });
 
@@ -367,7 +351,6 @@ export default function ItemDetailPage() {
                   <div
                     key={match.id}
                     onClick={() => {
-                      claimMutation.reset();
                       setSelectedMatch(match);
                     }}
                     className={`cursor-pointer rounded-2xl p-4 border transition-all ${
@@ -454,36 +437,23 @@ export default function ItemDetailPage() {
                     </Link>
 
                     {isLost && user?.id === report.userId && (
-                      <button
-                        type="button"
-                        onClick={() => claimMutation.mutate(selectedMatch.id)}
-                        disabled={claimMutation.isPending || Boolean(selectedMatch.claim)}
-                        className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        {claimMutation.isPending
-                          ? "Requesting..."
-                          : selectedMatch.claim
-                            ? "Claim Requested"
-                            : "Request Claim"}
-                      </button>
+                      <RequestClaimButton
+                        matchId={selectedMatch.id}
+                        itemName={selectedMatch.counterpart.itemName}
+                        claim={selectedMatch.claim}
+                        role="claimant"
+                      />
+                    )}
+                    {!isLost && user?.id === report.userId && (
+                      <RequestClaimButton
+                        matchId={selectedMatch.id}
+                        itemName={selectedMatch.counterpart.itemName}
+                        claimsReceivedCount={selectedMatch.claimsReceivedCount}
+                        role="finder"
+                      />
                     )}
                   </div>
                 </div>
-
-                {claimMutation.isSuccess && selectedMatch.claim?.id === claimMutation.data.id && (
-                  <p role="status" className="text-xs text-emerald-700">
-                    Claim submitted. The finder has been notified and can add verification questions.
-                  </p>
-                )}
-                {claimMutation.isError && claimMutation.variables === selectedMatch.id && (
-                  <p role="alert" className="text-xs text-rose-700">
-                    {axios.isAxiosError<{ message?: string }>(claimMutation.error)
-                      ? claimMutation.error.response?.data?.message ||
-                        "Could not submit the claim. Please try again."
-                      : "Could not submit the claim. Please try again."}
-                  </p>
-                )}
 
                 {/* Similarity meter & comparison summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
