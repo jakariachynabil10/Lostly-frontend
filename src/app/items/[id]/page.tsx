@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -27,7 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-export default function ItemDetailPage() {
+export function ItemDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -430,7 +430,7 @@ export default function ItemDetailPage() {
 
                   <div className="flex items-center gap-3">
                     <Link
-                      href={`/items/${selectedMatch.counterpart.id}`}
+                      href={`/${selectedMatch.counterpart.type === "LOST" ? "lost-items" : "found-items"}/${selectedMatch.counterpart.id}`}
                       className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
                     >
                       Open Matched Item
@@ -520,6 +520,57 @@ export default function ItemDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+export default function ItemRedirectPage() {
+  const params = useParams();
+  const router = useRouter();
+  const itemId = params.id as string;
+  const { data, isLoading, error } = useQuery<{
+    report: ItemReport;
+    matches: ClaimableMatch[];
+  }>({
+    queryKey: ["item-detail", itemId],
+    queryFn: async () => {
+      const res = await api.get(`/reports/${itemId}`);
+      return res.data?.data;
+    },
+  });
+
+  useEffect(() => {
+    if (!data?.report) return;
+    const route = data.report.type === "LOST" ? "lost-items" : "found-items";
+    router.replace(`/${route}/${itemId}`);
+  }, [data, itemId, router]);
+
+  if (isLoading || data?.report) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-16 w-full animate-pulse space-y-6">
+        <div className="h-6 w-32 bg-slate-200 rounded-lg"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="h-96 bg-slate-200 rounded-3xl md:col-span-1"></div>
+          <div className="h-96 bg-slate-200 rounded-3xl md:col-span-2"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto py-20 px-4 text-center space-y-4">
+      <h2 className="text-xl font-bold text-slate-900">Item not found</h2>
+      <p className="text-xs text-slate-500">
+        {error
+          ? "This report may have been deleted or does not exist."
+          : "This report could not be opened."}
+      </p>
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold"
+      >
+        <ArrowLeft className="w-4 h-4" /> Return to Home
+      </Link>
     </div>
   );
 }

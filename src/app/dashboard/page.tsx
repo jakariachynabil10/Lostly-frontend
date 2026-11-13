@@ -1095,7 +1095,7 @@ export default function DashboardPage() {
 
                           <div className="flex items-center gap-2 self-end sm:self-center">
                             <Link
-                              href={`/items/${report.id}`}
+                              href={`/${report.type === "LOST" ? "lost-items" : "found-items"}/${report.id}`}
                               className="px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center gap-1"
                             >
                               View Details
@@ -1517,7 +1517,7 @@ export default function DashboardPage() {
               </button>
               {selectedMatchModal.reportId ? (
                 <Link
-                  href={`/items/${selectedMatchModal.reportId}`}
+                  href={`/${selectedMatchModal.type === "LOST" ? "lost-items" : "found-items"}/${selectedMatchModal.reportId}`}
                   className="flex-1 py-2.5 rounded-xl bg-[#4338ca] text-white text-xs font-bold hover:bg-[#3730a3] shadow-md shadow-indigo-600/20 text-center"
                 >
                   View & Claim Item

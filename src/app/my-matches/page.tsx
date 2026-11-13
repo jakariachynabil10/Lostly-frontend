@@ -139,7 +139,7 @@ export default function MyMatchesPage() {
 
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
                       <Link
-                        href={`/items/${match.matchedItem.id}`}
+                        href={`/${match.matchedItem.type === "LOST" ? "lost-items" : "found-items"}/${match.matchedItem.id}`}
                         className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:text-indigo-900"
                       >
                         View matched item <ArrowRight className="h-4 w-4" />
