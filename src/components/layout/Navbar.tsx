@@ -39,7 +39,13 @@ export const Navbar: React.FC = () => {
     { name: "Explore", href: "/" },
     { name: "Lost Items", href: "/lost-items" },
     { name: "Found Items", href: "/found-items" },
-    ...(user ? [{ name: "Dashboard", href: "/dashboard" }] : []),
+    ...(user
+      ? [
+          { name: "Dashboard", href: "/dashboard" },
+          { name: "My Matches", href: "/my-matches" },
+          { name: "My Claims", href: "/my-claims" },
+        ]
+      : []),
   ];
 
   return (
