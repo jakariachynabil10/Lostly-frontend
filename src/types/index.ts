@@ -34,6 +34,10 @@ export interface MatchItem {
   similarityScore: number;
   matchingFactors: MatchFactor[];
   createdAt: string;
+  claim?: {
+    id: string;
+    status: string;
+  } | null;
   counterpartType?: ReportType;
   counterpart?: ItemReport;
   myItem?: Partial<ItemReport>;
