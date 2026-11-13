@@ -173,7 +173,7 @@ export interface PaginatedClaims {
   totalPages: number;
 }
 
-export interface MyMatchItem extends MatchItem {
+export interface MyMatchItem extends Omit<MatchItem, "myItem" | "matchedItem"> {
   myItem: Pick<
     ItemReport,
     "id" | "itemName" | "type" | "imageUrl" | "status" | "location" | "date"
