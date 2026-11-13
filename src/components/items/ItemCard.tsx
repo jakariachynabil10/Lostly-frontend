@@ -19,7 +19,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
 
   return (
     <Link
-      href={`/items/${item.id}`}
+      href={`/${item.type === "LOST" ? "lost-items" : "found-items"}/${item.id}`}
       className="group block bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-300 hover:-translate-y-0.5"
     >
       {/* Media container */}
