@@ -10,13 +10,14 @@ import { ClaimStatusTimeline } from "../../../components/claims/ClaimStatusTimel
 import { ClaimantClaimControls } from "../../../components/claims/ClaimantClaimControls";
 import { FinderClaimControls } from "../../../components/claims/FinderClaimControls";
 import { useAuth } from "../../../context/AuthContext";
-import { useClaim } from "../../../lib/claims-api";
+import { useClaim, useUpdateClaim } from "../../../lib/claims-api";
 
 export default function ClaimRoomPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const claimQuery = useClaim(id, Boolean(user) && !authLoading);
+  const updateClaimMutation = useUpdateClaim();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -142,6 +143,66 @@ export default function ClaimRoomPage() {
           status={claim.status}
           questions={claim.questions}
         />
+      )}
+
+      {(claim.status === "APPROVED" || claim.status === "COMPLETED") && (
+        <section className="space-y-4 rounded-3xl border border-emerald-200 bg-emerald-50/60 p-6">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Contact exchange
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              The claim is approved. Contact details are shown as provided by the claim service.
+            </p>
+          </div>
+          <dl className="grid gap-4 sm:grid-cols-2">
+            {[claim.claimant, claim.finder].map((participant) => (
+              <div
+                key={participant.id}
+                className="rounded-2xl border border-emerald-200 bg-white p-4"
+              >
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {participant.id === claim.claimantId ? "Claimant" : "Finder"}
+                </dt>
+                <dd className="mt-1 font-semibold text-slate-900">
+                  {participant.name}
+                </dd>
+                {participant.email && (
+                  <dd className="mt-1 break-all text-sm text-indigo-700">
+                    <a href={`mailto:${participant.email}`}>
+                      {participant.email}
+                    </a>
+                  </dd>
+                )}
+              </div>
+            ))}
+          </dl>
+
+          {claim.userRole === "finder" && claim.status === "APPROVED" && (
+            <div className="space-y-2 border-t border-emerald-200 pt-4">
+              <button
+                type="button"
+                onClick={() =>
+                  updateClaimMutation.mutate({
+                    claimId: claim.id,
+                    action: "complete",
+                  })
+                }
+                disabled={updateClaimMutation.isPending}
+                className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {updateClaimMutation.isPending
+                  ? "Updating claim..."
+                  : "Mark Item Returned"}
+              </button>
+              {updateClaimMutation.isError && (
+                <p role="alert" className="text-sm text-rose-700">
+                  {updateClaimMutation.error.message}
+                </p>
+              )}
+            </div>
+          )}
+        </section>
       )}
     </main>
   );
