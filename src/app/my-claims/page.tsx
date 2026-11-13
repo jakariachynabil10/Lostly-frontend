@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -180,9 +181,12 @@ export default function MyClaimsPage() {
                 >
                   <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                     {item.imageUrl ? (
-                      <img
+                      <Image
                         src={item.imageUrl}
                         alt={item.itemName}
+                        width={80}
+                        height={80}
+                        unoptimized
                         className="h-full w-full object-cover"
                       />
                     ) : (
