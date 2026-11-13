@@ -83,6 +83,10 @@ export default function ClaimRoomPage() {
   if (!claim) return null;
 
   const item = claim.match.foundReport;
+  const isTerminal =
+    claim.status === "COMPLETED" ||
+    claim.status === "REJECTED" ||
+    claim.status === "CANCELLED";
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6 px-4 py-10 sm:px-6">
@@ -130,19 +134,35 @@ export default function ClaimRoomPage() {
         <ClaimStatusTimeline status={claim.status} />
       </header>
 
-      {claim.userRole === "claimant" && (
+      {!isTerminal && claim.userRole === "claimant" && (
         <ClaimantClaimControls
           claimId={claim.id}
           status={claim.status}
           questions={claim.questions}
         />
       )}
-      {claim.userRole === "finder" && (
+      {!isTerminal && claim.userRole === "finder" && (
         <FinderClaimControls
           claimId={claim.id}
           status={claim.status}
           questions={claim.questions}
         />
+      )}
+
+      {isTerminal && (
+        <section className="space-y-2 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900">
+            Claim closed
+          </h2>
+          <p className="text-sm text-slate-600">
+            This claim is {claim.status.toLowerCase()}. No further verification actions are available.
+          </p>
+          {claim.reviewNotes && (
+            <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+              {claim.reviewNotes}
+            </p>
+          )}
+        </section>
       )}
 
       {(claim.status === "APPROVED" || claim.status === "COMPLETED") && (
