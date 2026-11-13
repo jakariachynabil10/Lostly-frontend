@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -23,8 +24,6 @@ import {
   RotateCcw,
   ShieldCheck,
   AlertCircle,
-  HelpCircle,
-  Lock,
   ExternalLink,
 } from "lucide-react";
 
@@ -36,7 +35,6 @@ export default function ItemDetailPage() {
   const itemId = params.id as string;
 
   const [selectedMatch, setSelectedMatch] = useState<MatchItem | null>(null);
-  const [claimNoticeOpen, setClaimNoticeOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Fetch report details & matches
@@ -59,6 +57,22 @@ export default function ItemDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["item-detail", itemId] });
+    },
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: async (matchId: string) => {
+      const response = await api.post<{ data: NonNullable<MatchItem["claim"]> }>(
+        "/claims",
+        { matchId },
+      );
+      return response.data.data;
+    },
+    onSuccess: (claim, matchId) => {
+      setSelectedMatch((current) =>
+        current?.id === matchId ? { ...current, claim } : current,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["item-detail", itemId] });
     },
   });
 
@@ -352,7 +366,10 @@ export default function ItemDetailPage() {
                 return (
                   <div
                     key={match.id}
-                    onClick={() => setSelectedMatch(match)}
+                    onClick={() => {
+                      claimMutation.reset();
+                      setSelectedMatch(match);
+                    }}
                     className={`cursor-pointer rounded-2xl p-4 border transition-all ${
                       isSelected
                         ? "border-indigo-600 bg-indigo-50/20 shadow-md ring-2 ring-indigo-500/20"
@@ -424,7 +441,7 @@ export default function ItemDetailPage() {
                       Match Inspection Details
                     </span>
                     <h3 className="text-lg font-bold text-slate-900">
-                      Pairing: "{report.itemName}" ↔ "{selectedMatch.counterpart.itemName}"
+                      Pairing: &quot;{report.itemName}&quot; ↔ &quot;{selectedMatch.counterpart.itemName}&quot;
                     </h3>
                   </div>
 
@@ -436,16 +453,37 @@ export default function ItemDetailPage() {
                       Open Matched Item
                     </Link>
 
-                    {/* Request Claim Button with Phase 2 notice */}
-                    <button
-                      onClick={() => setClaimNoticeOpen(true)}
-                      className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs flex items-center gap-1.5"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      Request Claim
-                    </button>
+                    {isLost && user?.id === report.userId && (
+                      <button
+                        type="button"
+                        onClick={() => claimMutation.mutate(selectedMatch.id)}
+                        disabled={claimMutation.isPending || Boolean(selectedMatch.claim)}
+                        className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        {claimMutation.isPending
+                          ? "Requesting..."
+                          : selectedMatch.claim
+                            ? "Claim Requested"
+                            : "Request Claim"}
+                      </button>
+                    )}
                   </div>
                 </div>
+
+                {claimMutation.isSuccess && selectedMatch.claim?.id === claimMutation.data.id && (
+                  <p role="status" className="text-xs text-emerald-700">
+                    Claim submitted. The finder has been notified and can add verification questions.
+                  </p>
+                )}
+                {claimMutation.isError && claimMutation.variables === selectedMatch.id && (
+                  <p role="alert" className="text-xs text-rose-700">
+                    {axios.isAxiosError<{ message?: string }>(claimMutation.error)
+                      ? claimMutation.error.response?.data?.message ||
+                        "Could not submit the claim. Please try again."
+                      : "Could not submit the claim. Please try again."}
+                  </p>
+                )}
 
                 {/* Similarity meter & comparison summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
@@ -472,39 +510,6 @@ export default function ItemDetailPage() {
         )}
       </section>
 
-      {/* Claim Dialog / Modal (Phase 2 Preview) */}
-      {claimNoticeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 border border-slate-200 shadow-2xl">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6" />
-            </div>
-
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-bold text-slate-900">
-                Claim Verification System
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                You've identified a strong match ({selectedMatch ? Math.round(selectedMatch.similarityScore) : 0}% similarity)!
-              </p>
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-left text-xs text-amber-900 space-y-1">
-                <p className="font-semibold">Notice for Phase 1:</p>
-                <p className="text-[11px] leading-relaxed">
-                  Automated matching calculation is fully operational. Full interactive ownership disputes and escrow handoffs will be activated in Phase 2. You may contact the reporter directly using the provided details.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setClaimNoticeOpen(false)}
-              className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Delete Confirmation Modal */}
       {deleteConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs p-4 animate-fade-in">
@@ -518,7 +523,7 @@ export default function ItemDetailPage() {
                 Delete This Report?
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Are you sure you want to delete "{report.itemName}"? This action cannot be undone.
+                Are you sure you want to delete &quot;{report.itemName}&quot;? This action cannot be undone.
               </p>
             </div>
 

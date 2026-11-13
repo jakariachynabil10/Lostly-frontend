@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -10,7 +11,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar,
-  Shield,
   Save,
 } from "lucide-react";
 
@@ -52,10 +52,13 @@ export default function ProfilePage() {
         type: "success",
         text: "Profile updated successfully!",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<{ message?: string }>(err)
+        ? err.response?.data?.message
+        : undefined;
       setStatusMessage({
         type: "error",
-        text: err.response?.data?.message || "Failed to update profile",
+        text: message || "Failed to update profile",
       });
     } finally {
       setIsSaving(false);

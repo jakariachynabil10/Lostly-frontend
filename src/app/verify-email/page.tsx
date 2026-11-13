@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
@@ -17,7 +17,7 @@ function maskEmail(email: string) {
   return `${masked}@${domain}`;
 }
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = useMemo(() => {
@@ -216,5 +216,29 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 flex items-center justify-center px-4 py-16 bg-gradient-to-b from-indigo-50 via-white to-slate-50">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-indigo-500/5 sm:p-10 animate-pulse">
+            <div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-indigo-100" />
+            <div className="mx-auto h-6 w-40 rounded bg-slate-200" />
+            <div className="mx-auto mt-3 h-4 w-56 rounded bg-slate-100" />
+            <div className="mt-8 flex justify-center gap-2">
+              {Array.from({ length: CODE_LENGTH }).map((_, index) => (
+                <div key={index} className="h-12 w-10 rounded-xl bg-slate-100 sm:h-14 sm:w-12" />
+              ))}
+            </div>
+            <div className="mt-5 h-10 rounded-xl bg-indigo-100" />
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
