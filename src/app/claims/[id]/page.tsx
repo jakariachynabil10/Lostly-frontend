@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import axios from "axios";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, PackageSearch } from "lucide-react";
@@ -112,9 +113,12 @@ export default function ClaimRoomPage() {
         <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-200">
             {item.imageUrl ? (
-              <img
+              <Image
                 src={item.imageUrl}
                 alt={item.itemName}
+                width={56}
+                height={56}
+                unoptimized
                 className="h-full w-full object-cover"
               />
             ) : (
