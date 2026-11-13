@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import {
   useAddVerificationQuestions,
   useReviewVerificationAnswer,
+  useUpdateClaim,
 } from "../../lib/claims-api";
 import { ClaimStatus, VerificationQuestion } from "../../types";
 
@@ -19,12 +20,23 @@ export function FinderClaimControls({
   questions,
 }: FinderClaimControlsProps) {
   const [drafts, setDrafts] = useState([""]);
+  const [rejectReason, setRejectReason] = useState("");
   const addQuestionsMutation = useAddVerificationQuestions();
   const reviewAnswerMutation = useReviewVerificationAnswer();
+  const claimActionMutation = useUpdateClaim();
   const busy =
-    addQuestionsMutation.isPending || reviewAnswerMutation.isPending;
+    addQuestionsMutation.isPending ||
+    reviewAnswerMutation.isPending ||
+    claimActionMutation.isPending;
   const canAddQuestions = status === "PENDING" || status === "UNDER_REVIEW";
   const canReviewAnswers = status === "UNDER_REVIEW";
+  const allAnswersAccepted =
+    questions.length > 0 &&
+    questions.every(
+      (question) =>
+        question.answers[question.answers.length - 1]?.reviewStatus ===
+        "ACCEPTED",
+    );
 
   const submitQuestions = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -203,6 +215,68 @@ export function FinderClaimControls({
         </form>
       )}
 
+      {status === "UNDER_REVIEW" && (
+        <div className="space-y-3 border-t border-slate-100 pt-4">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Resolve this claim
+          </h3>
+          <button
+            type="button"
+            onClick={() =>
+              claimActionMutation.mutate({ claimId, action: "approve" })
+            }
+            disabled={busy || !allAnswersAccepted}
+            className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {claimActionMutation.isPending &&
+            claimActionMutation.variables?.action === "approve"
+              ? "Approving..."
+              : "Approve claim"}
+          </button>
+          {!allAnswersAccepted && (
+            <p className="text-xs text-slate-500">
+              Accept every submitted answer before approving the claim.
+            </p>
+          )}
+          <label
+            htmlFor="claim-rejection-reason"
+            className="block text-xs font-medium text-slate-600"
+          >
+            Reason for rejection (required)
+          </label>
+          <textarea
+            id="claim-rejection-reason"
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+            maxLength={1000}
+            rows={3}
+            disabled={busy}
+            className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-50"
+          />
+          <button
+            type="button"
+            onClick={() =>
+              claimActionMutation.mutate({
+                claimId,
+                action: "reject",
+                reviewNotes: rejectReason.trim(),
+              })
+            }
+            disabled={
+              busy ||
+              rejectReason.trim().length === 0 ||
+              rejectReason.trim().length > 1000
+            }
+            className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {claimActionMutation.isPending &&
+            claimActionMutation.variables?.action === "reject"
+              ? "Rejecting..."
+              : "Reject claim"}
+          </button>
+        </div>
+      )}
+
       {addQuestionsMutation.isError && (
         <p role="alert" className="text-sm text-rose-700">
           {addQuestionsMutation.error.message}
@@ -211,6 +285,11 @@ export function FinderClaimControls({
       {reviewAnswerMutation.isError && (
         <p role="alert" className="text-sm text-rose-700">
           {reviewAnswerMutation.error.message}
+        </p>
+      )}
+      {claimActionMutation.isError && (
+        <p role="alert" className="text-sm text-rose-700">
+          {claimActionMutation.error.message}
         </p>
       )}
     </section>
